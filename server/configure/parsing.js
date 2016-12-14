@@ -1,25 +1,39 @@
 'use strict';
 
-const BP = require('body-parser');
-const session = require('express-session');
-const SequelizeStore = require('connect-session-sequelize')(session.Store);
-const secrets = require('../../secrets');
-const passport = require('passport');
+import BP from 'body-parser';
+import session from 'express-session';
+import connectSession from 'connect-session-sequelize';
+import secrets from '../../secrets';
+import passport from 'passport';
 
-module.exports = (app, _db) => {
+const SequelizeStore = connectSession(session.Store);
+
+export default (app, _db) => {
+  // Enable body parser.
   app.use(BP.json());
   app.use(BP.urlencoded({extended: true}));
 
+  // Create and sync my Session Storage.
+  // TO-DO - Look into doing this without a library.
   const sessionStore = new SequelizeStore({db: _db});
   sessionStore.sync();
 
+  // Create a date a year from now.
+  let aYearFromNow = new Date();
+  aYearFromNow.setYear(aYearFromNow.getFullYear() + 1);
+
+  // Instantiate the use of the session store.
   app.use(session({
     secret: secrets.SessionKey,
     store: sessionStore,
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: true,
+    cookie: {
+      expires: aYearFromNow
+    }
   }));
 
+  // Enable passport.
   app.use(passport.initialize());
   app.use(passport.session());
 };

@@ -1,15 +1,25 @@
 'use strict';
 
-const app = require('express')();
-const _db = require('./db/db');
+import express from 'express';
 
-require('./configure')(app, _db);
-require('./sessions')(app);
+const app = express();
+import _db from './db/db';
+import chalk from 'chalk';
 
-app.use('/api', require('./routes'));
+import configServer from './configure';
+import configSessions from './sessions';
+
+configServer(app, _db);
+configSessions(app);
+
+import Routes from './routes';
+
+app.use('/api', Routes);
 
 app.get('/*', (req, res) => {
-  console.log(req.session);
+  if (req.session.socketData) {
+    console.log(chalk.magenta(`A user @ ${req.session.socketData.address} just visited the site.`));
+  }
   res.sendFile(app.getValue('indexPath'));
 });
 
@@ -19,4 +29,4 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).send(err.message || 'Internal server error.');
 });
 
-module.exports = app;
+export default app;
